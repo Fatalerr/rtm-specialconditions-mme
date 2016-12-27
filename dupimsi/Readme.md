@@ -1,5 +1,5 @@
-Readme
-======================
+Duplicated IMSI monitoring and deleting
+=========================================
 
 This is a mornitering module of RTM for the issue which MME having duplicated IMSI. 
 this module can find the duplicated IMSI info from the MMDU of MME and send the 
