@@ -1,0 +1,10 @@
+#Dump MMDU IMSI and then find&delete the duplicated IMSI.
+
+##cron job for duplicated IMSI issue DYMME21BNK
+7 * * * * /opt/RTM/specialconditions/mme/dupimsi/dump_mmdu_ims DYMME21BNK >/dev/null 2>&1
+9 * * * * /opt/RTM/specialconditions/mme/dupimsi/purgeimsi.py DYMME21BNK go
+
+##cron job for duplicated IMSI issue DYMME22BNK
+12 * * * * /opt/RTM/specialconditions/mme/dupimsi/dump_mmdu_ims DYMME22BNK >/dev/null 2>&1
+14 * * * * /opt/RTM/specialconditions/mme/dupimsi/purgeimsi.py DYMME22BNK go
+

@@ -1,0 +1,88 @@
+#!/usr/bin/expect
+######################################################################
+# Nokia ION Service Delivery
+# jun1.liu@nokia.com
+######################################################################
+
+set sleep_interval 0.5
+set basepath "/opt/RTM/specialconditions/mme/dupimsi"
+set cmdpath "$basepath/remote.cmd"
+set default_cmdfile "default.cmd"
+set cmdprex  "dupimsi"
+set timeout 1000
+
+#cachedir. default is /tmp/cache
+set cachedir [exec python $basepath/baseconfig.py path CacheBase]
+set tmpdir "$cachedir/log"
+
+###### parse the args from command line ######
+if {[llength $argv] < 1} {
+    puts stderr "Usage: $argv0 <hostname>"
+    puts "args:$argv"
+    exit
+    }
+
+set hostname [lindex $argv 0]
+set login    [exec python $basepath/baseconfig.py host $hostname]
+
+set hostip [lindex $login 0]
+set user   [lindex $login 1]
+set passwd [lindex $login 2]
+
+
+###### read the commands from file ######
+set cmdfile "$cmdpath/${cmdprex}_$hostname.cmd"
+set cmdsList {}
+if { [file exists $cmdfile]==0 } {
+    set cmdfile "$cmdpath/$default_cmdfile"
+}
+
+set fp [open $cmdfile r]
+while {[gets $fp line] >= 0} { 
+     if {[string match "#*" $line]} {continue}
+     lappend cmdsList $line 
+     }
+close $fp
+
+#puts "login: $hostip,$user,$passwd"
+#puts "temp dir: $tmpdir"
+#puts "cmd file: $cmdfile"
+#exit
+
+###### start the interactive  ######
+set prompt "< "
+set prompt1 "\$ "
+#set ENT "\r\n"
+set ENT "\r"
+
+set log_date [exec date "+%Y-%m-%d %H:%M:%S"]
+puts "$log_date Starting to execute the commands and the STDOUT is closed, please check the logfile for detail."
+#close the stdout 
+log_user 0
+
+#logger the output to the file. '-a' will ignore the log_user
+log_file -noappend -a "$tmpdir/~flexins${hostname}.${cmdprex}"
+
+spawn -noecho telnet $hostip
+expect "ENTER USERNAME <"
+send "$user$ENT"
+expect "ENTER PASSWORD <"
+send "$passwd$ENT"
+
+foreach cmd $cmdsList {
+    expect {
+	 $prompt {send "$cmd$ENT"} 
+	 $prompt1 {send "$cmd$ENT"} 
+	}
+    set error 0
+    sleep $sleep_interval
+}
+
+expect -re $prompt {send "ZZZ;$ENT"}
+log_user 1
+
+set log_date [exec date "+%Y-%m-%d %H:%M:%S"]
+puts "\n$log_date Finished"
+log_file
+exec mv $tmpdir/~flexins${hostname}.${cmdprex} $tmpdir/flexins_${cmdprex}_${hostname}.log
+

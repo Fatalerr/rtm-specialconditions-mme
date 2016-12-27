@@ -1,0 +1,17 @@
+---
+dymme21:
+   hostname: DYMME21BNK
+   _type: HostAccount
+   ipaddr: 10.180.78.113
+   username: RTMUSER
+   password: "rtm@password2"
+   conn_type: telnet
+   
+dymme22:
+   hostname: DYMME22BNK
+   _type: HostAccount
+   ipaddr: 10.180.78.114
+   username: RTMUSER
+   password: "passw0rd2"
+   conn_type: telnet
+   

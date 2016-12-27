@@ -1,0 +1,77 @@
+#!/usr/bin/expect
+######################################################################
+# Nokia ION EPC Service Delivery
+# jun1.liu@nokia.com
+######################################################################
+
+set sleep_interval 1
+set basepath "/opt/RTM/specialconditions/mme/dupimsi"
+set cmdpath "/tmp/cache/cmdfile"
+set purgedir "/tmp/purgeimsi"
+set tmpdir "/tmp/cache/log"
+set cmdprex "delimsi"
+set default_cmdfile "default.cmd"
+set timeout 180
+
+###### parse the args from command line ######
+if {[llength $argv] < 1} {
+    puts stderr "Usage: $argv0 <hostname>"
+    puts "args:$argv"
+    exit
+    }
+
+set hostname [lindex $argv 0]    
+set login    [exec python $basepath/baseconfig.py host $hostname]
+
+set hostip [lindex $login 0]
+set user   [lindex $login 1]
+set passwd [lindex $login 2]
+
+###### read the commands from file ######
+set cmdfile "$cmdpath/${cmdprex}_$hostname.cmd"
+set cmdsList {}
+if { [file exists $cmdfile]==0 } {
+    #set cmdfile $cmdpath/$default_cmdfile
+    puts "Remote command file for host: $hostname is not found!!"
+    exit
+}
+
+set fp [open $cmdfile r]
+while {[gets $fp line] >= 0} { 
+     if {[string match "#*" $line]} {continue}
+     lappend cmdsList $line 
+     }
+close $fp
+
+###### start the interactive  ######
+set prompt "< "
+set prompt1 "\$ "
+#set ENT "\r\n"
+set ENT "\r"
+
+log_user 1
+
+set log_date [exec date +%Y%m%d%H%M]
+log_file -noappend "$tmpdir/~ns${hostname}.${cmdprex}"
+
+spawn -noecho telnet $hostip
+expect "ENTER USERNAME <"
+send "$user$ENT"
+expect "ENTER PASSWORD <"
+send "$passwd$ENT"
+
+foreach cmd $cmdsList {
+    expect {
+	 $prompt {send "$cmd$ENT"} 
+	 $prompt1 {send "$cmd$ENT"} 
+	}
+    set error 0
+    sleep $sleep_interval
+}
+
+expect -re $prompt {send "ZZZ;$ENT"}
+puts "\nFinished"
+log_file
+
+exec mv $tmpdir/~ns${hostname}.${cmdprex} $tmpdir/flexins_${cmdprex}_${hostname}.log
+
